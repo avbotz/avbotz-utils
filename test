@@ -1,0 +1,5 @@
+#!/bin/bash
+FILES=""
+for i in `cat ~/robotics/logs/${1}.txt`; do FILES="$FILES ~/robotics/logs/${i}/{0..999}.jpg"; done
+echo ./threshold $FILES
+
