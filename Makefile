@@ -1,7 +1,6 @@
-all: threshold
+all: main
 
-threshold: threshold.cpp
-	g++ -g threshold.cpp -I/usr/include/opencv -lopencv_core -lopencv_highgui -o threshold
-
+main: main.cpp
+	g++ main.cpp -o main `pkg-config --cflags --libs opencv`
 clean:
-	rm threshold
+	rm main

@@ -1,52 +1,6 @@
-/*
-hi * P.S. (pre script)
-hi * For an explanation of these stupid comments,
-hi * Look at the bottom
-hi *
-hi * P.P.S.B.P.A.S.S. ("post pre script, but pre actual script" script)
-hi * The P.P.P.S. is where I tell you how to get rid of these comments
-hi *
-hi ****************************************************************************
-hi *
-hi *  Copyright whatever, I'm copying linux's comment description warranty thing
-hi *
-hi *  This thing is free, do whatever, "AS IS" blah blah. It might blow up your computer, it might not do anything.
-hi *  Who knows. I don't care and don't sue me.
-hi *
-hi *  Do people include this stuff in 350 line terrible programs?
-hi *  I should do something else instead of writing useless comments
-hi *  I'm eating a habanero. Luke, you should try one
-hi *  I have nothing to do while my mouth burns and I watch Apex Salty Suite, so I'm commenting this
-hi */
 #include <cv.h>
 #include <highgui.h>
 
-/*
-hi * I think I'm supposed to have a description of the program up here, so here it is
-hi *
-hi * This basically just splits image processing into 3 steps and displays the original image, along with what the image looks like after each step.
-hi * The default program does this:
-hi * 	1) Find new rgb values based on the old ones
-hi * 	2) Scale the values
-hi * 	3) Find the centroid of each color channel
-hi *
-hi * Dude commenting stuff is hard
-hi *
-hi * How much am I supposed to comment?
-hi * How stupid do I assume readers are?
-hi * Should I explain how opencv Mats work?
-hi * Should I say how all of the stuff in showImages works?
-hi * Should I tell them that the limit of steps is 3 because my screen can only fit 4 images on my screen at once?
-hi * Should I just scale the images to make them all fit?
-hi * Will scaling the images make them uglier and less accurate?
-hi * Will being able to see more images be work the detail loss?
-hi * Are there people using this on 4k moniters that can fit like 20000 images at once?
-hi * Will my comments become longer than my program itself?
-hi * Will people make fun of how bad my code is?
-hi * Will people make fun of how bad my comments are?
-hi *
-hi * These are the things that keep me awake at night
-hi */
 int total[3] = {0, 0, 0};
 int avg[3];
 int minRed = 255;
@@ -57,6 +11,9 @@ int maxBlue = 0;
 
 int minGreen = 255;
 int maxGreen = 0;
+
+int maxMove = 10;
+int minSep = 10;
 /*
  * Displays the images in this orientation
  * __________________
@@ -105,6 +62,8 @@ void showImages (cv::Mat input, cv::Mat trans, cv::Mat thres, cv::Mat out)
  * First step of processing
  * Do any preliminary processing
  * Get information about the whole image (eg average values of colors)
+ *
+ * This function calculates new rgb values
  */
 cv::Mat transformImage(cv::Mat input)
 {
@@ -128,11 +87,9 @@ cv::Mat transformImage(cv::Mat input)
 		int inGreen = inPtr[3*i + 1];
 		int inRed = inPtr[3*i + 2];
 
+		int r = inRed, g = inGreen, b = inBlue;
 		// calculate a new red value based on the rgb value of the pixel
-		// (2r - g)/2 works pretty well, but misses some buoys on very light images
-		// (2r - 2g/3)/2 find more buoys, but also gets white blobs in the background (see 14_07_26_01_49_35 in 2014 comp logs)
-		// blue probably has to be factored in somehow to get a more accurate value
-		int outRed = (2*inRed - (3 * inGreen)/4)/2;
+		int outRed = (float) 1 * r / (g+1) * std::max((2*r - 1*g - 0*b) / 2 + 30, 0);
 		outRed = (outRed > 0) ? outRed : 0;
 		outRed = (outRed < 255) ? outRed : 255;
 		// get the max and min values of the image for scaling in the next step
@@ -147,21 +104,23 @@ cv::Mat transformImage(cv::Mat input)
 
 		// I just wrote random stuff for this one
 		// it doesn't work
-		int outGreen = ((int)inGreen - ((int)inRed + 4*(int)inBlue)/4);
-		outGreen = (outGreen > 0) ? outGreen : 0;
-		outGreen = (outGreen < 255) ? outGreen : 255;
-		if (outGreen > maxGreen)
-		{
-			maxGreen = outGreen;
-		}
-		if (outGreen < minGreen)
-		{
-			minGreen = outGreen;
-		}
+	//	int outGreen = ((int)inGreen - ((int)inRed + 4*(int)inBlue)/4);
+	//	outGreen = (outGreen > 0) ? outGreen : 0;
+	//	outGreen = (outGreen < 255) ? outGreen : 255;
+	//	if (outGreen > maxGreen)
+	//	{
+	//		maxGreen = outGreen;
+	//	}
+	//	if (outGreen < minGreen)
+	//	{
+	//		minGreen = outGreen;
+	//	}
 
 		// who knows what this does
 		// probably yellow buoys eventually
 		int outBlue = 0;
+
+		int outGreen = 0;
 
 		// get totals of each color in order to get average
 		total[2] += outRed;
@@ -178,15 +137,12 @@ cv::Mat transformImage(cv::Mat input)
 	avg[0] = total[0] / (output.rows * output.cols);
 	return output;
 }
-/*
-hi * This stream has a lot of setup time
-hi * It should run more efficiently
-hi * My stomach is starting to hurt now
-hi */
 
 /*
  * Second step of processing
  * Threshold colors and transform image
+ *
+ * This function scales the values
  */
 cv::Mat thresholdImage(cv::Mat input)
 {
@@ -213,6 +169,9 @@ cv::Mat thresholdImage(cv::Mat input)
 		outGreen = (int)((255.0 * outGreen) / (1 + maxGreen - minGreen));
 		outRed = (int)((255.0 * outRed) / (1 + maxRed - minRed));
 
+		outBlue = (long)pow(outBlue, 4) / (long)pow(255, 3);
+		outGreen = (long)pow(outGreen, 4) / (long)pow(255, 3);
+		outRed = (long)pow(outRed, 4) / (long)pow(255, 3);
 		// get the new total red, green, and blue values to find a weighed average in the next step
 		total[0] += outBlue;
 		total[1] += outGreen;
@@ -228,6 +187,9 @@ cv::Mat thresholdImage(cv::Mat input)
 /*
  * Last step of processing
  * Do any other processing (eg finding blobs, getting centroids, etc)
+ *
+ * This function does k means clustering, then finds the cluster with the highest density
+ * it marks that one green, and the others blue
  */
 cv::Mat lastStep(cv::Mat input)
 {
@@ -238,62 +200,207 @@ cv::Mat lastStep(cv::Mat input)
 	long totalRed[2] = {0, 0};
 	long totalGreen[2] = {0, 0};
 	long totalBlue[2] = {0, 0};
-	for (int i = 0; i< input.rows * input.cols; i++)
+	int centroids[6][3];
+	int totalCentroids = 0;
+	for (int n = 1; n <= 6; n++)
 	{
-		int inBlue = inPtr[3*i];
-		int inGreen = inPtr[3*i + 1];
-		int inRed = inPtr[3*i + 2];
-		int outBlue = inBlue;
-		int outGreen = inGreen;
-		int outRed = inRed;
+		int centroid[n][2];
+		
+		// dude, uniformly spreading points is pretty hard
+		switch (n)
+		{
+			case 1:
+				centroid[0][0] = -1;
+				centroid[0][1] = -1;
+				break;
+			case 2:
+				centroid[0][0] = -1;
+				centroid[0][1] = -1;
+				centroid[1][0] = input.cols;
+				centroid[1][1] = input.rows;
+				break;
+			case 3:
+				centroid[0][0] = input.cols;
+				centroid[0][1] = input.rows;
+				centroid[1][0] = input.cols/2;
+				centroid[1][1] = -1;
+				centroid[2][0] = -1;
+				centroid[2][1] = input.rows;
+				break;
+			case 4:
+				centroid[0][0] = input.cols;
+				centroid[0][1] = input.rows;
+				centroid[1][0] = input.cols;
+				centroid[1][1] = -1;
+				centroid[2][0] = -1;
+				centroid[2][1] = -1;
+				centroid[3][0] = -1;
+				centroid[3][1] = input.rows;
+				break;
+			case 5:
+				centroid[0][0] = input.cols;
+				centroid[0][1] = input.rows;
+				centroid[1][0] = input.cols;
+				centroid[1][1] = -1;
+				centroid[2][0] = -1;
+				centroid[2][1] = -1;
+				centroid[3][0] = -1;
+				centroid[3][1] = input.rows;
+				centroid[4][0] = input.cols / 2;
+				centroid[4][1] = input.rows / 2;
+				break;
+			case 6:
+				centroid[0][0] = input.cols;
+				centroid[0][1] = input.rows;
+				centroid[1][0] = input.cols;
+				centroid[1][1] = -1;
+				centroid[2][0] = -1;
+				centroid[2][1] = -1;
+				centroid[3][0] = -1;
+				centroid[3][1] = input.rows;
+				centroid[4][0] = input.cols / 2;
+				centroid[4][1] = input.rows / 6;
+				centroid[5][0] = input.cols / 2;
+				centroid[5][1] = 5 * input.rows / 6;
+				break;
+		}
+		int effort = 1;
+		bool useless = false;
+		while (effort > 0) 
+		{
+			long centroidWeight[n][4];
+			for (int i = 0; i < n; i++)
+			{
+				centroidWeight[i][0] = 0;
+				centroidWeight[i][1] = 0;
+				centroidWeight[i][2] = 0;
+				centroidWeight[i][3] = 0;
+			}
+			for (int i = 0; i< input.rows * input.cols; i++)
+			{
+				int inBlue = inPtr[3*i];
+				int inGreen = inPtr[3*i + 1];
+				int inRed = inPtr[3*i + 2];
+				int outBlue = inBlue;
+				int outGreen = inGreen;
+				int outRed = inRed;
 
-		// get the weighed total of the x and y coordinates of each color
-		// \
-hi		luke, does "\" cancel out the newline and keep comments on the next?\
-hi		this is pretty cool
-		totalRed[0] += (i % input.cols) * outRed;
-		totalRed[1] += (i / input.cols) * outRed;
+				int minDist = 10000;
+				int min = 0;
+				for (int m = 0; m < n; m++)
+				{
+					int dists = std::abs(centroid[m][0] - (i % input.cols)) + (std::abs(centroid[m][1] - (i / input.cols)));
+					if (dists < minDist)
+					{
+						min = m;
+						minDist = dists;
+					}
+				}
+				if (inRed > 0)
+				{
+					centroidWeight[min][2] += inRed;
+					centroidWeight[min][0] += inRed * (i % input.cols);
+					centroidWeight[min][1] += inRed * (i / input.cols);
+					centroidWeight[min][3]++;
+				}
 
-		totalGreen[0] += (i % input.cols) * outGreen;
-		totalGreen[1] += (i / input.cols) * outGreen;
-
-		totalBlue[0] += (i % input.cols) * outBlue;
-		totalBlue[1] += (i / input.cols) * outBlue;
-
-		outPtr[3*i] = outBlue;
-		outPtr[3*i + 1] = outGreen;
-		outPtr[3*i + 2] = outRed;
+				// get the weighed total of the x and y coordinates of each color
+				outPtr[3*i] = outBlue;
+				outPtr[3*i + 1] = outGreen;
+				outPtr[3*i + 2] = outRed;
+			}
+			int move = 0;
+			for (int m = 0; m < n; m++)
+			{
+				int oldX = centroid[m][0];
+				int oldY = centroid[m][1];
+				if (centroidWeight[m][2] != 0)
+				{
+					centroid[m][0] = (int)(0.5 + 1.0 * centroidWeight[m][0] / centroidWeight[m][2]);
+					centroid[m][1] = (int)(0.5 + 1.0 * centroidWeight[m][1] / centroidWeight[m][2]);
+					centroid[m][2] = (int)(1024.0 * centroidWeight[m][2] / centroidWeight[m][3]);
+					move += std::abs(centroid[m][0] - oldX) + std::abs(centroid[m][1] - oldY);
+				}
+				else
+				{
+					useless = true;
+					centroid[m][0] = 0;
+					centroid[m][1] = 0;
+					centroid[m][2] = 0;
+					move = maxMove + 1;
+				}
+			}
+			if ((move < maxMove) || (effort > 20))
+			{
+				effort = -1;
+			}
+			// displays the locations of the centroids at every loop
+		//	std::cout<<centroidWeight[0][2]<<" "<<n<<"\n";
+		//	std::cout<<centroid[0][0]<<" x"<<n<<"\n";
+		//	std::cout<<centroid[0][1]<<" y"<<n<<"\n";
+		//	cv::imshow("Thresholding", output);
+		//	cv::waitKey(0);
+			effort++;
+		}
+		bool crowded = false;
+		for (int i = 0; i < n; i++)
+		{
+			for (int j = i + 1; j < n; j++)
+			{
+				if ((std::abs(centroid[i][0] - centroid[j][0]) + std::abs(centroid[i][1] - centroid[j][1]) < minSep) || (useless))
+				{
+					crowded = true;
+				}
+			}
+		}
+		if (crowded)
+		{
+			//std::cout<<"Crowded with "<<totalCentroids<<" centroids\n";
+			break;
+		}
+		else
+		{
+			totalCentroids = n;
+			for (int m = 0; m < n; m++)
+			{
+				centroids[m][0] = centroid[m][0];
+				centroids[m][1] = centroid[m][1];
+				centroids[m][2] = centroid[m][2];
+			}
+		}
 	}
-	// find the centroid of the image
-	// this results in the path messing up the position if it is in the image
-	// but it can probably be processed out somehow
-	// (maybe removing points below the centroid if standard deviation is lage enough?)
-	int centRed[2] = {totalRed[0] / total[2], totalRed[1] / total[2]};
-	int centGreen[2] = { totalGreen[0] / total[1],  totalGreen[1] / total[1]};
-//	int centBlue[2] = {totalBlue[0] / total[0], totalBlue[1] / total[0]};
 
 	// just use the blue channel to make a 10x10 square at the center
-	// because the blue is stupid and useless right now \
-hi
-	for (int i = centRed[0] - 5; i < centRed[0] + 5; i++)
+//	for (int m = 0; m < totalCentroids; m++)
+//	{
+//		for (int i = centroids[m][0] - 5; i < centroids[m][0] + 5; i++)
+//		{
+//			for (int j = centroids[m][1] - 5; j < centroids[m][1] + 5; j++)
+//			{
+//				if ((i > 0) && (i < input.cols) && (j > 0) && (j < input.rows))
+//				{
+//					outPtr[3*(i + j * input.cols)] = 255;
+//				}
+//			}
+//		}
+	if (totalCentroids > 0)
 	{
-		for (int j = centRed[1] - 5; j < centRed[1] + 5; j++)
+		int maxCent = 0;
+		int maxVal = centroids[0][2];
+		for (int m = 0; m < totalCentroids; m++)
 		{
-			if ((i > 0) && (i < input.cols) && (j > 0) && (j < input.rows))
+			outPtr[3*(centroids[m][0] + centroids[m][1] * input.cols)] = 255;
+			outPtr[3*(centroids[m][0] + centroids[m][1] * input.cols)+1] = 0;
+			outPtr[3*(centroids[m][0] + centroids[m][1] * input.cols)+2] = 0;
+			//std::cout<<centroids[m][0]<<" CENTROID TOTAL "<<centroids[m][2]<<"\n";
+			if (centroids[m][2] > maxVal)
 			{
-				outPtr[3*(i + j * input.cols)] = 255;
+				maxVal = centroids[m][2];
+				maxCent = m;
 			}
 		}
-	}
-	for (int i = centGreen[0] - 5; i < centGreen[0] + 5; i++)
-	{
-		for (int j = centGreen[1] - 5; j < centGreen[1] + 5; j++)
-		{
-			if ((i > 0) && (i < input.cols) && (j > 0) && (j < input.rows))
-			{
-				outPtr[3*(i + j * input.cols)] = 255;
-			}
-		}
+		outPtr[3*(centroids[maxCent][0] + centroids[maxCent][1] * input.cols)] = 0;
+		outPtr[3*(centroids[maxCent][0] + centroids[maxCent][1] * input.cols)+1] = 255;
 	}
 	return output;
 }
@@ -305,56 +412,26 @@ int main (int argc, char* argv[])
 	cv::Mat thresImg[argc - 1];
 	cv::Mat outImg[argc - 1];
 
+	cv::Mat dispIn[argc - 1];
+	cv::Mat dispTrans[argc - 1];
+	cv::Mat dispThres[argc - 1];
+	cv::Mat dispOut[argc - 1];
 	for (int i = 0; i < argc - 1; i++)
 	{
 		// get the image, run and display the result of all 3 steps of processing on the image
-		// \
-hi		The parallelism on that sentence goes (run) and (display the result of) all...\
-hi		Not (run) and (display) the result of all... \
-hi		I'm not sure if that's gramatically corret, but it's what I wrote
-		inImg[i] = cv::imread(argv[i + 1], CV_LOAD_IMAGE_COLOR);
+		dispIn[i] = cv::imread(argv[i + 1], CV_LOAD_IMAGE_COLOR);
+		cv::resize(dispIn[i], inImg[i], cv::Size(64, 36));
 		transImg[i] = transformImage(inImg[i]);
 		thresImg[i] = thresholdImage(transImg[i]);
-		outImg[i] = lastStep(thresImg[i]);
-		std::cout<<total[2]<<" "<<total[1]<<"\n";
-		showImages(inImg[i], transImg[i], thresImg[i], outImg[i]);
+	      	outImg[i] = lastStep(thresImg[i]);
+		cv::resize(transImg[i], dispTrans[i], cv::Size(640, 360), 0, 0, cv::INTER_NEAREST);
+		cv::resize(thresImg[i], dispThres[i], cv::Size(640, 360), 0, 0, cv::INTER_NEAREST);
+		cv::resize(outImg[i], dispOut[i], cv::Size(640, 360), 0, 0, cv::INTER_NEAREST);
+		//std::cout<<total[2]<<" "<<total[1]<<"\n";
+		showImages(dispIn[i], dispTrans[i], dispThres[i], dispOut[i]);
 	}
 	
 }
 
-/*
-hi * P.S.
-hi * My mouth doesn't burn anymore
-hi * Also, Luke, I want to try the browser you use, but I keep forgetting the letters
-hi * You should reply to this with the name of the browser.
-hi * I tried pressing random keys but I just got a bunch of letters on the home row.
-hi * like this: ldkfah
-hi * None of the results from that search looked like browsers.
-hi * 
-hi * P.P.S.
-hi * I only stopped commenting because Apex ended for today.
-hi * Who knows how much longer I could have gone.
-hi * Maybe I could have broken 400 lines
-hi *
-hi * P.P.P.S.
-hi * All of the useless comments have lines beginning with hi
-hi * You can use regular expressions to find and delete them
-hi *
-hi * P.P.P.P.S.
-hi * The first line of multiline comments doesn't have a hi
-hi * because then I would have a hi outside of a comment.
-hi * Also, I might have missed some when I was putting hi at the beginning.
-hi * You should read the comments to make sure.
-hi * Or I will next week.
-hi * 
-hi * P.P.P.P.P.S.
-hi * If you are too lazy to make a regex yourself,
-hi * This vim command thing gets rid of all of the comments that I marked
-hi * 	:%s/^.\+\n\(^\hi.*\n\)\+//g
-hi * Don't make fun of me for being bad at regexes
-hi * I made this with a stomachache. Also I have no idea how regex works
-hi * 
-hi * P.P.P.P.P.P.S.
-hi * Oh dang you emailed me and asked me for this
-hi * I should check my email at night before I sleep
-hi */
+
+
