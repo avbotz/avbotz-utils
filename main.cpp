@@ -14,6 +14,9 @@ int maxGreen = 0;
 
 int maxMove = 10;
 int minSep = 10;
+
+int avgRX;
+int avgRY;
 /*
  * Displays the images in this orientation
  * __________________
@@ -153,6 +156,9 @@ cv::Mat thresholdImage(cv::Mat input)
 	unsigned char* inPtr = input.ptr();
 	unsigned char* outPtr = output.ptr();
 
+	int totPos[] = {0, 0};
+	int totRed = 0;
+
 	for (int i = 0; i< input.rows * input.cols; i++)
 	{
 		int inBlue = inPtr[3*i];
@@ -177,10 +183,23 @@ cv::Mat thresholdImage(cv::Mat input)
 		total[1] += outGreen;
 		total[2] += outRed;
 
+		if (outRed > 0)
+		{
+			totPos[0] += outRed * (i % input.cols);
+			totPos[1] += outRed * (i / input.cols);
+			totRed += outRed;
+	//		totRed++;
+	//		totPos[0] += i % input.cols;
+	//		totPos[1] += i / input.cols;
+		}
+
 		outPtr[3*i] = outBlue;
 		outPtr[3*i + 1] = outGreen;
 		outPtr[3*i + 2] = outRed;
 	}
+	avgRX = totPos[0] / totRed;
+	avgRY = totPos[1] / totRed;
+	outPtr[3 * (avgRY * input.cols + avgRX) + 1] = 255;
 	return output;
 }
 
@@ -206,62 +225,62 @@ cv::Mat lastStep(cv::Mat input)
 	{
 		int centroid[n][2];
 		
-		// dude, uniformly spreading points is pretty hard
+		// I should figure out a better way to do this
 		switch (n)
 		{
 			case 1:
-				centroid[0][0] = -1;
-				centroid[0][1] = -1;
+				centroid[0][0] = avgRX;
+				centroid[0][1] = avgRY;
 				break;
 			case 2:
-				centroid[0][0] = -1;
-				centroid[0][1] = -1;
-				centroid[1][0] = input.cols;
-				centroid[1][1] = input.rows;
+				centroid[0][0] = avgRX;
+				centroid[0][1] = avgRY - 5;
+				centroid[1][0] = avgRX;
+				centroid[1][1] = avgRY + 5;
 				break;
 			case 3:
-				centroid[0][0] = input.cols;
-				centroid[0][1] = input.rows;
-				centroid[1][0] = input.cols/2;
-				centroid[1][1] = -1;
-				centroid[2][0] = -1;
-				centroid[2][1] = input.rows;
+				centroid[0][0] = avgRX;
+				centroid[0][1] = avgRY + 5;
+				centroid[0][0] = avgRX - 5;
+				centroid[0][1] = avgRY - 5;
+				centroid[0][0] = avgRX + 5;
+				centroid[0][1] = avgRY - 5;
 				break;
 			case 4:
-				centroid[0][0] = input.cols;
-				centroid[0][1] = input.rows;
-				centroid[1][0] = input.cols;
-				centroid[1][1] = -1;
-				centroid[2][0] = -1;
-				centroid[2][1] = -1;
-				centroid[3][0] = -1;
-				centroid[3][1] = input.rows;
+				centroid[0][0] = avgRX + 5;
+				centroid[0][1] = avgRY + 5;
+				centroid[0][0] = avgRX + 5;
+				centroid[0][1] = avgRY - 5;
+				centroid[0][0] = avgRX - 5;
+				centroid[0][1] = avgRY - 5;
+				centroid[0][0] = avgRX - 5;
+				centroid[0][1] = avgRY + 5;
 				break;
 			case 5:
-				centroid[0][0] = input.cols;
-				centroid[0][1] = input.rows;
-				centroid[1][0] = input.cols;
-				centroid[1][1] = -1;
-				centroid[2][0] = -1;
-				centroid[2][1] = -1;
-				centroid[3][0] = -1;
-				centroid[3][1] = input.rows;
-				centroid[4][0] = input.cols / 2;
-				centroid[4][1] = input.rows / 2;
+				centroid[0][0] = avgRX - 5;
+				centroid[0][1] = avgRY - 5;
+				centroid[0][0] = avgRX - 5;
+				centroid[0][1] = avgRY + 5;
+				centroid[0][0] = avgRX + 5;
+				centroid[0][1] = avgRY + 5;
+				centroid[0][0] = avgRX + 5;
+				centroid[0][1] = avgRY - 5;
+				centroid[0][0] = avgRX + 5;
+				centroid[0][1] = avgRY;
 				break;
 			case 6:
-				centroid[0][0] = input.cols;
-				centroid[0][1] = input.rows;
-				centroid[1][0] = input.cols;
-				centroid[1][1] = -1;
-				centroid[2][0] = -1;
-				centroid[2][1] = -1;
-				centroid[3][0] = -1;
-				centroid[3][1] = input.rows;
-				centroid[4][0] = input.cols / 2;
-				centroid[4][1] = input.rows / 6;
-				centroid[5][0] = input.cols / 2;
-				centroid[5][1] = 5 * input.rows / 6;
+				centroid[0][0] = avgRX + 5;
+				centroid[0][1] = avgRY + 5;
+				centroid[0][0] = avgRX - 5;
+				centroid[0][1] = avgRY + 5;
+				centroid[0][0] = avgRX;
+				centroid[0][1] = avgRY + 5;
+				centroid[0][0] = avgRX - 5;
+				centroid[0][1] = avgRY - 5;
+				centroid[0][0] = avgRX + 5;
+				centroid[0][1] = avgRY - 5;
+				centroid[0][0] = avgRX;
+				centroid[0][1] = avgRY - 5;
 				break;
 		}
 		int effort = 1;
