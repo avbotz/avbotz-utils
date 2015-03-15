@@ -133,7 +133,7 @@ cv::Mat transformImage(cv::Mat input)
 		// (2r - g)/2 works pretty well, but misses some buoys on very light images
 		// (2r - 2g/3)/2 find more buoys, but also gets white blobs in the background (see 14_07_26_01_49_35 in 2014 comp logs)
 		// blue probably has to be factored in somehow to get a more accurate value
-		int outRed = (float) 1 * r / (g+1) * std::max((2*r - 1*g - 0*b) / 2 + 30, 0);
+		int outRed = 0;//(float) 1 * r / (g+1) * std::max((2*r - 1*g - 0*b) / 2 + 30, 0);
 //		outRed = 0;
 		// get the max and min values of the image for scaling in the next step
 		if (outRed > maxRed)
@@ -145,10 +145,9 @@ cv::Mat transformImage(cv::Mat input)
 			minRed = outRed;
 		}
 
-		// I just wrote random stuff for this one
-		// it doesn't work
-		int outGreen = (float) std::min((int)2*g - r, (int)2*g - b + 50) / 4 + 30;
-		outGreen = 0;
+		// This one picks up only green buoys, but misses darker parts of the bouy (the bottom)\
+		   and bouys that are futher away (lower red and green values)
+		int outGreen = (int) std::max(50 + 4*g - 3*b - r - std::max(r, b), 0);
 
 		if (outGreen > maxGreen)
 		{
