@@ -3,6 +3,68 @@
 #include <highgui.h>
 #include <iostream>
 
+using namespace cv;
+
+cv::Mat kmeansImgWrapper(Mat inWrapper,int outputTempSizeX, int outputTempSizeY, int clusterTempCount )
+{	
+	//Declaring all of the variables used in kMeans
+	//inWrapper is the input image.
+	int outputSizeX =  outputTempSizeX;
+	int outputSizeY = outputTempSizeY;
+	int clusterCount = clusterTempCount;
+	//defines a new size to resize to
+	Size outputSize(outputSizeX, outputSizeY);
+	//simple resize
+	resize(inWrapper, inWrapper, outputSize, 0, 0, INTER_NEAREST);
+	//This creates a new empty matrix of the proper size
+	Mat samples(inWrapper.rows*inWrapper.cols, 3, CV_32F);
+	//nested for populates the matrix in the format openCV wants
+	//most of the rest of the code i just copied from stack overflow. I have a sort of vague idea of what it does. If you really want to find out and document it, you're welcome to do so yourself you lazy bum.
+	for(int y = 0; y < inWrapper.rows; y++)
+		for(int x = 0; x < inWrapper.cols; x++)
+			for ( int z = 0; z< 3; z++)
+				samples.at<float>(y+x*inWrapper.rows, z) = inWrapper.at<Vec3b>(y,x)[z];
+	Mat labels;
+	int attempts = 3;
+	Mat centers;
+	kmeans(samples, clusterCount, labels, TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 10000, 0.0001), attempts, KMEANS_PP_CENTERS, centers);
+	Mat kmeanOut(inWrapper.size() , inWrapper.type() );
+	for(int y = 0; y  < inWrapper.rows; y++)
+		for(int x = 0; x < inWrapper.cols; x++)
+		{
+			int cluster_idx = labels.at<int>(y+x*inWrapper.rows, 0);
+			kmeanOut.at<Vec3b>(y,x)[0]= centers.at<float>(cluster_idx, 0);	
+
+			kmeanOut.at<Vec3b>(y,x)[1]= centers.at<float>(cluster_idx, 1);	
+
+			kmeanOut.at<Vec3b>(y,x)[2]= centers.at<float>(cluster_idx, 2);	
+		}
+
+	return kmeanOut;
+}
+
+cv::Mat equalColorHist(cv::Mat& img, bool red, bool green, bool blue)
+{
+	std::vector<cv::Mat> channels;
+	cv::split(img, channels);
+
+	if (blue)
+	{
+		cv::equalizeHist(channels[0], channels[0]);
+	}
+	if (green)
+	{
+		cv::equalizeHist(channels[1], channels[1]);
+	}
+	if (red)
+	{
+		cv::equalizeHist(channels[2], channels[2]);
+	}
+
+	cv::Mat result;
+	cv::merge(channels, result);
+	return result;
+}
 struct Bin
 {
 	int x;
@@ -83,7 +145,7 @@ cv::Mat transformImage(cv::Mat input)
 		int r = inPtr[3*i+2];
 		int g = inPtr[3*i+1];
 		int b = inPtr[3*i+0];
-		double val = 40.0*(g-0.4*r)/(b+5.0*r+3.01);
+		double val = 4*g-2*r-b;
 		//double val = std::max(0, std::min(255, 128+40*r/(g+1) - 120*g/(b+1)));
 
 		midPtr[i] = val;
@@ -101,6 +163,7 @@ cv::Mat transformImage(cv::Mat input)
 	{
 		outPtr[3*i+1] = (int)(255*(midPtr[i]-minRed)/(maxRed-minRed));
 	}
+	output = equalColorHist(input,false,true,true);
 	return output;
 }
 
@@ -164,18 +227,46 @@ cv::Mat thresholdImage(cv::Mat input)
 		}
 	}
 	float maxG = -1000;
+	float minG = 1000;
 	float tPtr[input.rows*input.cols];
+	float qPtr[input.rows*input.cols];
 	int diffDist = 8;
 	int gx = 0;
 	int gy = 0;
 	bool adjust = true;
 	float gDistX = 0.05;
 	float gDistY = 0.3;
+	std::vector<int> values;
+	int totG = 0;
+	float tempM = -100;
+	input = equalColorHist(input,false,false,false);
+
+	inPtr = input.ptr();
 	for (int i = 0; i < input.rows*input.cols; i++)
 	{
 		int b = inPtr[3*i], g = inPtr[3*i+1], r = (int)inPtr[3*i+2];
-		tPtr[i] = 40.0*(g-0.4*r)/(b+5.0*r+3.01);
+		tPtr[i] = (g-0.4*r)/(b+3.01); 
+		//tPtr[i] = r;
+		//tPtr[i] = (g+0.4*r)/(b+3.0*r+3.01)-0.004*r;
+		//tPtr[i] = 40.0*r/(g+1.0) - 120.0*g/(b+1.0);
+		if (tPtr[i] > tempM)
+		{
+			tempM = tPtr[i];
+		}
+		totG += tPtr[i];
+		values.push_back(tPtr[i]);
 	}
+//	cv::Mat histothing;
+//	cv::cvtColor(input, histothing, cv::COLOR_BGR2GRAY);
+//	for (int i = 0; i < input.rows*input.cols; i++)
+//	{
+//		histothing.ptr()[i] = tPtr[i];
+//	}
+//	cv::equalizeHist(histothing, histothing);
+//	for (int i = 0; i < input.rows*input.cols; i++)
+//	{
+//		tPtr[i] = histothing.ptr()[i];
+//	}
 	// find difference between pixel and those around it (buoy should stand out from water a lot)
 	for (int c = diffDist; c < input.cols-diffDist; c++)
 	{
@@ -185,10 +276,14 @@ cv::Mat thresholdImage(cv::Mat input)
 			float vert = (2*tPtr[(r*input.cols+c)]-tPtr[((r-diffDist)*input.cols+c)]-tPtr[((r+diffDist)*input.cols+c)]);
 			float hori = (2*tPtr[(r*input.cols+c)]-tPtr[(r*input.cols+c+diffDist)]-tPtr[(r*input.cols+c-diffDist)]);
 			float weak = (std::abs(vert) < std::abs(hori)) ? vert+128 : hori+128;
-			output.ptr()[3*(r*input.cols+c)+1] = weak;
+			qPtr[(r*input.cols+c)] = weak;
 			// find green buoy and make sure it is near the same height as red, but not too close to red or yellow
 			if ((adjust) || ((std::abs(c-rx) > input.cols*gDistX) && (std::abs(c-yx) > input.cols*gDistX)))
 			{
+				if (weak < minG)
+				{
+					minG = weak;
+				}
 				if (weak > maxG)
 				{
 					gx = c;
@@ -198,11 +293,18 @@ cv::Mat thresholdImage(cv::Mat input)
 			}
 			else
 			{
-				output.ptr()[3*(r*input.cols+c)+1] /= 3;
+				qPtr[(r*input.cols+c)] /= 3;
 			}
 		}
 	}
+	std::sort(values.begin(), values.end());
+	std::cout<<"avg: "<<(1.0*totG/(values.size()))<<"  med: "<<values[values.size()/2]<<"  top: "<<tempM<<"\n";
+	for (int i = 0; i< input.rows * input.cols; i++)
+	{
+		outPtr[3*i+1] = (int)(255*(qPtr[i]-minG)/(maxG-minG));
+	}
 	output.ptr()[3*(gy*input.cols+gx)+2] = 255;
+	//output = kmeansImgWrapper(input, 128,72,10);
 	return output;
 }
 
@@ -312,8 +414,9 @@ int main (int argc, char* argv[])
 	{
 		// get the image, run and display the result of all 3 steps of processing on the image
 		dispIn[i] = cv::imread(argv[i + 1], CV_LOAD_IMAGE_COLOR);
-		cv::resize(dispIn[i], inImg[i], cv::Size(128, 72));
+		cv::resize(dispIn[i], inImg[i], cv::Size(640, 360));
 		transImg[i] = transformImage(inImg[i]);
+		cv::resize(dispIn[i], inImg[i], cv::Size(128, 72));
 		thresImg[i] = thresholdImage(inImg[i]);
 	      	outImg[i] = lastStep(thresImg[i]);
 		cv::resize(transImg[i], dispTrans[i], cv::Size(640, 360), 0, 0, cv::INTER_NEAREST);
