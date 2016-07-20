@@ -132,7 +132,8 @@ cv::Mat transformImage(cv::Mat input)
 		// (2r - g)/2 works pretty well, but misses some buoys on very light images
 		// (2r - 2g/3)/2 find more buoys, but also gets white blobs in the background (see 14_07_26_01_49_35 in 2014 comp logs)
 		// blue probably has to be factored in somehow to get a more accurate value
-		int outRed = (2*inRed - (3 * inGreen)/4)/2;
+		int outRed = (inGreen-inBlue) * 20 + inRed;
+		//int outRed = (2*inRed - (3 * inGreen)/4)/2;
 		outRed = (outRed > 0) ? outRed : 0;
 		outRed = (outRed < 255) ? outRed : 255;
 		// get the max and min values of the image for scaling in the next step
@@ -161,8 +162,19 @@ cv::Mat transformImage(cv::Mat input)
 
 		// who knows what this does
 		// probably yellow buoys eventually
-		int outBlue = 0;
-
+		int outBlue = 0;// (0.5 + (r + g - b) / 4)*10;
+/*
+		outBlue = (outBlue > 0) ? outBlue : 0;
+		outBlue = (outBlue < 255) ? outBlue : 255;
+		if (outBlue > maxBlue)
+		{
+			maxBlue = outBlue;
+		}
+		if (outBlue < minBlue)
+		{
+			minBlue = outBlue;
+		}
+*/
 		// get totals of each color in order to get average
 		total[2] += outRed;
 		total[1] += outGreen;
@@ -270,7 +282,7 @@ hi		this is pretty cool
 	// (maybe removing points below the centroid if standard deviation is lage enough?)
 	int centRed[2] = {totalRed[0] / total[2], totalRed[1] / total[2]};
 	int centGreen[2] = { totalGreen[0] / total[1],  totalGreen[1] / total[1]};
-//	int centBlue[2] = {totalBlue[0] / total[0], totalBlue[1] / total[0]};
+	int centBlue[2] = {totalBlue[0] / total[0], totalBlue[1] / total[0]};
 
 	// just use the blue channel to make a 10x10 square at the center
 	// because the blue is stupid and useless right now \
