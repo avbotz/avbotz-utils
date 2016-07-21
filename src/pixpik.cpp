@@ -1,7 +1,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
-#include<unordered_set>
+#include <unordered_set>
+#include <string>
  
 cv::Mat src;
  
@@ -10,6 +11,9 @@ enum Thresh_Values{ MIN_B, MAX_B, MIN_G, MAX_G, MIN_R, MAX_R };
 int tolerance = 20;
 double thresh_values[6];
 int min_thresh, max_thresh;
+//std::iterator<string> id;
+
+//std::unordered_set<std::string> values;
  
 void resize_sane(cv::Mat& src, cv::Mat& dst, int max_size){
  
@@ -52,7 +56,7 @@ void draw_rect(int event, int x, int y, int flags, void* param){
 			cv::Mat thresh_roi;
  
 			//separate the area of the image into a mat so we can find good thresholding values
-			roi = cv::Rect (std::min(tl.x, x), std::min(tl.y, y), std::max(x - tl.x, tl.x - x) , std::max(y - tl.y, tl.y - y)); 
+			roi = cv::Rect (std::min(tl.x, x), std::min(tl.y, y), std::max(x - tl.x, tl.x - x) , std::max(y - tl.y, tl.y - y));
 			thresh_roi = src(roi).clone();
 
 			//split into channels to find the min anx max of each channel
@@ -60,17 +64,13 @@ void draw_rect(int event, int x, int y, int flags, void* param){
 			split(thresh_roi, thresh_channels);
 
 			//cycle through each channel and find the min and max
-			std::unordered_set<std::string> values;
 			for(int x = 0; x < thresh_roi.cols; x++){
 				for(int y = 0; y < thresh_roi.rows; y++){
 					std::stringstream ss;
-					ss << "[" << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[0] << "," << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[1] <<"," << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[2] << "],";
-				values.insert(ss.str());
-					
+                             ss << "[" << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[2] << "," << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[1] <<"," << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[0] << "],";
+					std::cout << ss.str() << std::endl;
+                               //values.insert(ss.str());
 				}
-			}
-			for(auto i = values.begin(); i != values.end(); i++){
-				std::cout << *i << std::endl;
 			}
 		}
 	}
@@ -97,14 +97,17 @@ void draw_rect(int event, int x, int y, int flags, void* param){
 		
 int main(int argc, char **argv){
 
-	src = cv::imread(argv[1], cv::IMREAD_COLOR); 
-	
-	resize_sane(src, src, 800);
-
 	cv::namedWindow("draw", 1);
- 
+
 	cv::setMouseCallback("draw", draw_rect, NULL);
+
+	for(int i = 1; i < argc; i++)
+	{
+		src = cv::imread(argv[i], cv::IMREAD_COLOR); 
+
+		resize_sane(src, src, 800);
 	
-	cv::imshow("draw", src);
-	cv::waitKey(0);
+		cv::imshow("draw", src);
+		cv::waitKey(0);
+	}
 }
