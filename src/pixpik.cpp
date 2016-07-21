@@ -64,7 +64,7 @@ void draw_rect(int event, int x, int y, int flags, void* param){
 			for(int x = 0; x < thresh_roi.cols; x++){
 				for(int y = 0; y < thresh_roi.rows; y++){
 					std::stringstream ss;
-					ss << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[0] << " " << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[1] <<" " << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[2];
+					ss << "[" << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[0] << "," << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[1] <<"," << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[2] << "],";
 				values.insert(ss.str());
 					
 				}
