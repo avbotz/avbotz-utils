@@ -1,0 +1,7 @@
+Pixpik:
+	Run pixpic IMAGE_NAME > OUTPUT
+	IMAGE_NAME can have a wildcard
+
+Filter:
+	Run filter < INPUT > OUTPUT
+	Removes duplicate pixels
