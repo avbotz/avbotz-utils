@@ -52,7 +52,7 @@ void draw_rect(int event, int x, int y, int flags, void* param){
 			cv::Mat thresh_roi;
  
 			//separate the area of the image into a mat so we can find good thresholding values
-			roi = cv::Rect (tl.x, tl.y, x - tl.x , y - tl.y); 
+			roi = cv::Rect (std::min(tl.x, x), std::min(tl.y, y), std::max(x - tl.x, tl.x - x) , std::max(y - tl.y, tl.y - y)); 
 			thresh_roi = src(roi).clone();
 
 			//split into channels to find the min anx max of each channel
