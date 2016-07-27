@@ -13,4 +13,4 @@ hist:
 	g++ -ggdb -std=c++11 src/hist.cpp -o hist
 
 clean:
-	rm threshold pixpik filter
+	rm threshold pixpik filter hist
