@@ -1,4 +1,4 @@
-all: threshold pixpik filter
+all: threshold pixpik filter hist
 
 threshold:
 	g++ -g src/threshold.cpp -I/usr/include/opencv -lopencv_core -lopencv_highgui -o threshold
@@ -8,6 +8,9 @@ pixpik:
 
 filter:
 	g++ -ggdb -std=c++11 src/filter.cpp -o filter
+
+hist:
+	g++ -ggdb -std=c++11 src/hist.cpp -o hist
 
 clean:
 	rm threshold pixpik filter
