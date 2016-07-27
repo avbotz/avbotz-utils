@@ -9,5 +9,8 @@ pixpik:
 filter:
 	g++ -ggdb -std=c++11 src/filter.cpp -o filter
 
+hist:
+	g++ -ggdb -std=c++11 src/hist.cpp -o hist
+
 clean:
 	rm threshold pixpik filter
