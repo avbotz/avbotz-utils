@@ -13,6 +13,7 @@ double thresh_values[6];
 int min_thresh, max_thresh;
 //std::iterator<string> id;
 
+cv::Mat zoom;
 //std::unordered_set<std::string> values;
  
 void resize_sane(cv::Mat& src, cv::Mat& dst, int max_size){
@@ -28,6 +29,23 @@ void resize_sane(cv::Mat& src, cv::Mat& dst, int max_size){
 		
 		scale++;
 	} while((dst_size.width > max_size) || (dst_size.height > max_size));
+
+	cv::resize(src, dst, dst_size);
+ 
+}
+void increase_sane(cv::Mat& src, cv::Mat& dst, int min_size){
+ 
+	//divide by larger and larger ints until both are under min_size
+	int scale = 1;
+	cv::Size dst_size;
+ 
+	do {
+		//we want to try and preserve aspect ratio, but truncating a float to an int shouldn't really matter
+		dst_size.width = (int)(src.cols * scale);
+		dst_size.height = (int)(src.rows * scale);
+		
+		scale++;
+	} while((dst_size.width < min_size) || (dst_size.height < min_size));
 
 	cv::resize(src, dst, dst_size);
  
@@ -55,15 +73,12 @@ void draw_rect(int event, int x, int y, int flags, void* param){
 			cv::Rect roi;
 			cv::Mat thresh_roi;
  
-			//separate the area of the image into a mat so we can find good thresholding values
 			roi = cv::Rect (std::min(tl.x, x), std::min(tl.y, y), std::max(x - tl.x, tl.x - x) , std::max(y - tl.y, tl.y - y));
-			thresh_roi = src(roi).clone();
+			thresh_roi = zoom(roi).clone();
 
-			//split into channels to find the min anx max of each channel
 			std::vector<cv::Mat> thresh_channels;
 			split(thresh_roi, thresh_channels);
 
-			//cycle through each channel and find the min and max
 			for(int x = 0; x < thresh_roi.cols; x++){
 				for(int y = 0; y < thresh_roi.rows; y++){
 					std::stringstream ss;
@@ -72,6 +87,50 @@ void draw_rect(int event, int x, int y, int flags, void* param){
                                //values.insert(ss.str());
 				}
 			}
+		}
+	}
+
+	if( (event == CV_EVENT_MOUSEMOVE) && start_draw ){
+ 
+		cv::Mat draw = zoom.clone();
+ 
+		//draw the rectangle 
+		rectangle(draw, tl, cv::Point(x, y), cv::Scalar(255, 255, 0), 2, 8);
+
+		cv::imshow("zoom", draw);
+	}
+
+	if(event == CV_EVENT_LBUTTONDBLCLK){
+		cv::Mat draw;
+		draw = zoom.clone();
+		rectangle(draw, tl, cv::Point(x, y), cv::Scalar(255,255, 0), 3, 8);
+		cv::imshow("zoom", draw);
+	}
+ 
+ 
+}
+		
+void zoom_rect(int event, int x, int y, int flags, void* param){
+
+	if(event == CV_EVENT_LBUTTONDOWN) {
+		if(!start_draw) {
+			tl = cv::Point(x, y);
+			start_draw = true;
+		}
+ 
+		else { 
+			br = cv::Point(x, y);
+			start_draw = false;
+ 
+			//stuff to find ROI and threshold values
+			cv::Rect roi;
+ 
+			roi = cv::Rect (std::min(tl.x, x), std::min(tl.y, y), std::max(x - tl.x, tl.x - x) , std::max(y - tl.y, tl.y - y));
+			zoom = src(roi).clone();
+			
+			increase_sane(zoom, zoom, 300);	
+			cv::imshow("zoom", zoom);	
+
 		}
 	}
 
@@ -94,12 +153,12 @@ void draw_rect(int event, int x, int y, int flags, void* param){
  
  
 }
-		
 int main(int argc, char **argv){
 
 	cv::namedWindow("draw", 1);
-
-	cv::setMouseCallback("draw", draw_rect, NULL);
+	cv::namedWindow("zoom", 1);
+	cv::setMouseCallback("draw", zoom_rect, NULL);
+	cv::setMouseCallback("zoom", draw_rect, NULL);
 
 	for(int i = 1; i < argc; i++)
 	{
