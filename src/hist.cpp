@@ -27,7 +27,15 @@ std::vector<int> indices;
 
 int main(int argc, char** argv){
  
-	int reduction = atoi(argv[1]);
+ 	if(argc < 2){
+		std::cout << "No reduction coefficient specified.\n";
+		std::cout << "Usage: ./hist [coeffficient]\n";
+		std::cout << "The coefficient represents how much you want to reduce the number of lines.\n";
+		std::cout << "Old lines = 1000, coefficient =  3, new lines = roughy 333.\n";
+	}
+	else {
+		int reduction = atoi(argv[1]);
+	}
  
 	Color buf;
 	long total_repetitions;
