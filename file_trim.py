@@ -1,7 +1,3 @@
-#to run:
-#python file_trim.py
-#note: file must be in same folder
-
 import os
 import random
 
@@ -15,6 +11,8 @@ def decision(probability):
 
 print "Input filename:"
 file = raw_input()
+print "Input name of collection of points"
+name = raw_input()
 #print "input output filename"
 #out_file = raw_input()
 
@@ -36,10 +34,16 @@ f.close()
 
 f = open(file,"w")
 #f = open(out_file, "w")
+
+f.write("{!s} = [\n".format(name))
+
 for x in range(len(lines)):
     dec = decision(lines_delete)
     if dec == True:
-        f.write(lines[x])
+        f.write("        {!s}".format(lines[x]))
+
+f.write("]")
+
 f.close()
 
 
