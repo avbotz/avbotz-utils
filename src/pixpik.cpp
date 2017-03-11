@@ -153,15 +153,81 @@ void zoom_rect(int event, int x, int y, int flags, void* param){
  
  
 }
-int main(int argc, char **argv){
 
-	cv::namedWindow("draw", 1);
-	cv::namedWindow("zoom", 1);
-	cv::setMouseCallback("draw", zoom_rect, NULL);
-	cv::setMouseCallback("zoom", draw_rect, NULL);
+void select_rect(int event, int x, int y, int flags, void* param){
 
-	for(int i = 1; i < argc; i++)
-	{
+	if(event == CV_EVENT_LBUTTONDOWN) {
+		if(!start_draw) {
+			tl = cv::Point(x, y);
+			start_draw = true;
+		}
+ 
+		else { 
+			br = cv::Point(x, y);
+			start_draw = false;
+ 
+			//stuff to find ROI and threshold values
+			cv::Rect roi;
+			cv::Mat thresh_roi;
+ 
+			roi = cv::Rect (std::min(tl.x, x), std::min(tl.y, y), std::max(x - tl.x, tl.x - x) , std::max(y - tl.y, tl.y - y));
+			zoom = src(roi).clone();
+			thresh_roi = src(roi).clone();
+			
+			std::vector<cv::Mat> thresh_channels;
+			split(thresh_roi, thresh_channels);
+
+			for(int x = 0; x < thresh_roi.cols; x++){
+				for(int y = 0; y < thresh_roi.rows; y++){
+					std::stringstream ss;
+                             ss << "[" << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[2] << "," << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[1] <<"," << (int)thresh_roi.at<cv::Vec3b>(cv::Point(x, y))[0] << "],";
+					std::cout << ss.str() << std::endl;
+                               //values.insert(ss.str());
+				}
+			}
+		}
+	}
+
+	if( (event == CV_EVENT_MOUSEMOVE) && start_draw ){
+ 
+		cv::Mat draw = src.clone();
+ 
+		//draw the rectangle 
+		rectangle(draw, tl, cv::Point(x, y), cv::Scalar(255, 255, 0), 2, 8);
+
+		cv::imshow("draw", draw);
+	}
+
+	if(event == CV_EVENT_LBUTTONDBLCLK){
+		cv::Mat draw;
+		draw = src.clone();
+		rectangle(draw, tl, cv::Point(x, y), cv::Scalar(255,255, 0), 3, 8);
+		cv::imshow("draw", draw);
+	}
+ 
+ 
+}
+
+int main(int argc, char **argv) {
+	int counter = 0;
+	std::string z = "-z";
+	for(int n = 1; n < argc; n++) {
+		if(argv[n] == z) {
+			counter++;
+		}
+	}
+	if(counter>0) {
+		cv::namedWindow("draw", 1);
+		cv::namedWindow("zoom", 1);
+		cv::setMouseCallback("draw", zoom_rect, NULL);
+		cv::setMouseCallback("zoom", draw_rect, NULL);
+	}
+	if(counter == 0) {
+		cv::namedWindow("draw", 1);
+                cv::setMouseCallback("draw", select_rect, NULL);
+	}
+
+	for(int i = 1; i < argc; i++) {
 		src = cv::imread(argv[i], cv::IMREAD_COLOR); 
 
 		resize_sane(src, src, 800);
