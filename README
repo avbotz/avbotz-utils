@@ -5,3 +5,9 @@ Pixpik:
 Filter:
 	Run filter < INPUT > OUTPUT
 	Removes duplicate pixels
+
+Locpick:
+	Run "java -jar LocPick.jar [dir name] [file name]" in a terminal (I think windows works w/ cmd)
+	The [dir name] is the folder that has all of the images you are picking from.
+	The [file name] is the file you are writing to, e.g. "torpedo.txt"
+	An example command would be "java -jar LocPick.jar torpedoImages torpedo.txt"
