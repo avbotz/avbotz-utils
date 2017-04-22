@@ -18,6 +18,7 @@ public class Main {
     private Panel dispPanel;
     private File imagesDir;
     private File outputFile;
+	private String imageName;
     private int idx;
 
     /*
@@ -100,11 +101,11 @@ public class Main {
     private void manageMouseClick(int x, int y) {
 
         // Write coordinates to a file
-        System.out.println("@X: " + x + " @Y: " + y + ", wrote to file!");
+        System.out.println(imageName + " @X: " + x + " @Y: " + y + ", wrote to file!");
         try {
             FileWriter fileWriter = new FileWriter(outputFile, true);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-            bufferedWriter.append(x + " " + y);
+            bufferedWriter.append(imageName + " " + x + " " + y);
             bufferedWriter.newLine();
             bufferedWriter.close();
         } catch (Exception e) {
@@ -117,6 +118,7 @@ public class Main {
         // Get correct image
         try {
             Image image = ImageIO.read(imagesDir.listFiles()[idx]);
+			imageName = imagesDir.listFiles()[idx].getName();
             dispPanel.setDispImage(image);
         } catch (Exception e) {
             e.printStackTrace();
