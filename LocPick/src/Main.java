@@ -18,7 +18,7 @@ public class Main {
     private Panel dispPanel;
     private File imagesDir;
     private File outputFile;
-	private String imageName;
+    private String name;
     private int idx;
 
     /*
@@ -54,10 +54,12 @@ public class Main {
 
         // Setup width and height of panel
         try {
-            BufferedImage image = ImageIO.read(imagesDir.listFiles()[0]);
+            File file = imagesDir.listFiles()[0];
+            BufferedImage image = ImageIO.read(file);
+            name = file.getName();
             IMG_HEIGHT = image.getHeight();
             IMG_WIDTH = image.getWidth();
-            System.out.println("Width is " + IMG_WIDTH + " px, height is " + IMG_HEIGHT + " px.");
+            System.out.println("Width is " + IMG_WIDTH + " px, height is " + IMG_HEIGHT + " px. File name is " + name + " .");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -101,11 +103,11 @@ public class Main {
     private void manageMouseClick(int x, int y) {
 
         // Write coordinates to a file
-        System.out.println(imageName + " @X: " + x + " @Y: " + y + ", wrote to file!");
+        System.out.println("@X: " + x + " @Y: " + y + ", wrote to file!");
         try {
             FileWriter fileWriter = new FileWriter(outputFile, true);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-            bufferedWriter.append(imageName + " " + x + " " + y);
+            bufferedWriter.append(x + " " + y + " " + name);
             bufferedWriter.newLine();
             bufferedWriter.close();
         } catch (Exception e) {
@@ -117,8 +119,9 @@ public class Main {
 
         // Get correct image
         try {
-            Image image = ImageIO.read(imagesDir.listFiles()[idx]);
-			imageName = imagesDir.listFiles()[idx].getName();
+            File file = imagesDir.listFiles()[idx];
+            Image image = ImageIO.read(file);
+            name = file.getName();
             dispPanel.setDispImage(image);
         } catch (Exception e) {
             e.printStackTrace();
