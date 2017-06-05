@@ -1,0 +1,6 @@
+Create a 
+ - "bad" and "good" folder (for the output images)
+ - Run the program without arguments to see what the arguments are
+ - It is written in c++ and don't change it to python
+ - there should already by build and src folder
+ - run "make" to compile
