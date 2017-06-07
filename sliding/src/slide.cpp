@@ -40,17 +40,17 @@ int main( int argc, char** argv )
 					//image is good
 					cv::Rect myROI(x, y, width, height);
 					cv::Mat cropped = src(myROI);
-					string outfile = string("good/")+std::to_string(num2)+string("_")+filename;
 //					string outfile = std::to_string(num)+string("_")+filename;
+					string outfile = string("good/")+std::to_string(num)+string("_")+filename.substr(0, filename.size()-4) + string(".jpg");
 					imwrite(outfile, cropped );
 					std::cout<< outfile << std::endl;
 					num2++;
 				} else {
 					//image is bad
-					if(std::abs((x+width/2)-a)>width && std::abs((y+height/2)-b)>height){
+					if((rand() % 60) == 30 && std::abs((x+width/2)-a)>width && std::abs((y+height/2)-b)>height){
 						cv::Rect myROI(x, y, width, height);
 						cv::Mat cropped = src(myROI);
-						string outfile = string("bad/")+std::to_string(num)+string("_")+filename;
+						string outfile = string("bad/")+std::to_string(num)+string("_")+filename.substr(0, filename.size()-4) + string(".jpg");
 	//					string outfile = std::to_string(num)+string("_")+filename;
 						imwrite(outfile, cropped );
 						std::cout<< outfile << std::endl;
