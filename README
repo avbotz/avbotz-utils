@@ -9,3 +9,5 @@ Filter:
 Locpick:
 	Run "java -jar LocPick.jar"
 
+BoxPick:
+	Run "java -jar BoxPick.jar"

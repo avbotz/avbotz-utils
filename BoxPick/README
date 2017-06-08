@@ -1,0 +1,2 @@
+to compile:
+>> jar cvfm BoxPick.jar META-INF/MANIFEST.MF *.class
