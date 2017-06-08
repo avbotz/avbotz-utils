@@ -21,7 +21,8 @@ public class Main {
     private String name;
     private int idx;
 
-	int x=-1,y=-1,x2=-1,y2=-1;
+	int dragindex=0;
+	int[] x,y,x2,y2;
 
     /*
     IMPORTANT: This doesn't adapt if the images are of different sizes, although I would assume they are.
@@ -68,6 +69,10 @@ public class Main {
     }
 
     private void setupDisp() {
+		x = new int[]{-1,-1,-1};
+		y = new int[]{-1,-1,-1};
+		x2 = new int[]{-1,-1,-1};
+		y2 = new int[]{-1,-1,-1};
 
         System.out.println("Setting up display!");
 
@@ -80,17 +85,16 @@ public class Main {
                 super.mousePressed(mouseEvent);
 
                 // Get click location
-                x = mouseEvent.getX();
-                y = mouseEvent.getY();
+                x[dragindex] = mouseEvent.getX();
+                y[dragindex] = mouseEvent.getY();
             }
 			@Override
 			public void mouseReleased(MouseEvent mouseEvent){
-				x2 = mouseEvent.getX();
-				y2 = mouseEvent.getY();
+				x2[dragindex] = mouseEvent.getX();
+				y2[dragindex] = mouseEvent.getY();
 				manageMouseClick();
                 // Display next image
-                idx += 1;
-                dispImage();
+				dragindex++;
 			}
         });
         dispImage();
@@ -103,18 +107,41 @@ public class Main {
         dispFrame.setVisible(true);
         dispFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);;
     }
-
+	private boolean allPos(int[] arr){
+		for(int j:arr){
+			if(j==-1)
+				return false;
+		}
+		return true;
+	}
     private void manageMouseClick() {
-		if(x!=-1 && y!=-1 && x2!=-1 && y2!=-1){
+		//check if three boxes have been made
+		if(allPos(x) && allPos(y) && allPos(x2) && allPos(y2)){
 			// Write coordinates to a file
-			System.out.println("@X: " + x + " @Y: " + y + " @W: " + (x2-x) + " @H: " + (y2-y) + ", wrote to file!");
+			for(int l = 0; l < x.length; l++){
+				System.out.print("@X"+l+": " + x[l] + " @Y"+l+": " + y[l] + " @W"+l+": " + (x2[l]-x[l])+ " @H"+l+": " + (y2[l]-y[l]) + " ");
+			}
+			System.out.println();
 			try {
 				FileWriter fileWriter = new FileWriter(outputFile, true);
 				BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-				bufferedWriter.append(x + " " + y + " " + (x2-x)+ " " + (y2-y) + " " + name);
+				for(int l = 0; l < x.length; l++){
+					bufferedWriter.append(x[l] + " " + y[l] + " " + (x2[l]-x[l])+ " " + (y2[l]-y[l]) + " ");
+				}
+				bufferedWriter.append(name);
 				bufferedWriter.newLine();
 				bufferedWriter.close();
-				x=-1;y=-1;x2=-1;y2=-1;
+
+				//reset all variables
+				x = new int[]{-1,-1,-1};
+				y = new int[]{-1,-1,-1};
+				x2 = new int[]{-1,-1,-1};
+				y2 = new int[]{-1,-1,-1};
+				dragindex=0;
+
+				//change image
+                idx += 1;
+                dispImage();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
