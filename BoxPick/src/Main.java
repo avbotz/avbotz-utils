@@ -11,6 +11,8 @@ import java.io.PrintWriter;
 import java.net.URL;
 import java.util.*;
 import java.util.List;
+import java.awt.event.*;
+
 
 public class Main {
 
@@ -19,10 +21,13 @@ public class Main {
     private File imagesDir;
     private File outputFile;
     private String name;
+	private String outputDir;
     private int idx;
 
 	int dragindex=0;
 	int[] x,y,x2,y2;
+
+	String[] colors = new String[]{"Green", "Red", "Yellow"};
 
     /*
     IMPORTANT: This doesn't adapt if the images are of different sizes, although I would assume they are.
@@ -38,7 +43,6 @@ public class Main {
         setupImages();
         setupDisp();
     }
-
     private void setupImages() {
 
         System.out.println("Setting up images!");
@@ -47,13 +51,8 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Directory w/ Images: ");
         imagesDir = new File(scanner.next());
-        System.out.print("Output file name: ");
-        outputFile = new File(scanner.next());
-        try {
-            outputFile.createNewFile();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        System.out.print("Output Directory w/ Textfiles (Not as same as above): ");
+        outputDir = scanner.next();
 
         // Setup width and height of panel
         try {
@@ -79,6 +78,14 @@ public class Main {
         // Setup panel
         idx = 0;
         dispPanel = new Panel();
+		dispPanel.addMouseMotionListener(new MouseMotionListener() {
+			public void mouseDragged(MouseEvent e) {
+				dispPanel.setDraw(x[dragindex],y[dragindex],e.getX(),e.getY(),dragindex);
+			}
+			public void mouseMoved(MouseEvent e) {
+
+			}
+		});
         dispPanel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent mouseEvent) {
@@ -92,9 +99,10 @@ public class Main {
 			public void mouseReleased(MouseEvent mouseEvent){
 				x2[dragindex] = mouseEvent.getX();
 				y2[dragindex] = mouseEvent.getY();
+				dragindex++;
 				manageMouseClick();
                 // Display next image
-				dragindex++;
+				dispPanel.setDraw(0,0,0,0,dragindex);
 			}
         });
         dispImage();
@@ -119,17 +127,23 @@ public class Main {
 		if(allPos(x) && allPos(y) && allPos(x2) && allPos(y2)){
 			// Write coordinates to a file
 			for(int l = 0; l < x.length; l++){
-				System.out.print("@X"+l+": " + x[l] + " @Y"+l+": " + y[l] + " @W"+l+": " + (x2[l]-x[l])+ " @H"+l+": " + (y2[l]-y[l]) + " ");
+				System.out.print(name+": "+"@X"+l+": " + x[l] + " @Y"+l+": " + y[l] + " @W"+l+": " + (x2[l]-x[l])+ " @H"+l+": " + (y2[l]-y[l]) + " ");
 			}
 			System.out.println();
 			try {
+				outputFile = new File(outputDir+"/"+name+".txt");
+				try {
+					outputFile.createNewFile();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
 				FileWriter fileWriter = new FileWriter(outputFile, true);
 				BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
 				for(int l = 0; l < x.length; l++){
-					bufferedWriter.append(x[l] + " " + y[l] + " " + (x2[l]-x[l])+ " " + (y2[l]-y[l]) + " ");
+					bufferedWriter.append(colors[l]+" "+x[l] + " " + y[l] + " " + (x2[l]-x[l])+ " " + (y2[l]-y[l]) + " ");
+					bufferedWriter.newLine();
 				}
-				bufferedWriter.append(name);
-				bufferedWriter.newLine();
 				bufferedWriter.close();
 
 				//reset all variables
